@@ -32,7 +32,7 @@ INSERT INTO STUDENT_ACCOUNT (Phone, StudentID, EmailAddress, FirstName, LastName
 (4567890123, 104, 'lucas.davis@surendra.edu', 'Lucas', 'Davis', 'ldavis', 'hashedpassword104', 'East202'),
 (5678901234, 105, 'olivia.garcia@surendra.edu', 'Olivia', 'Garcia', 'ogarcia', 'hashedpassword105', 'South301'),
 (6789012345, 106, 'sophia.martin@surendra.edu', 'Sophia', 'Martin', 'smartin', 'hashedpassword106', 'South302'),
-(7890123456, 107, 'jack.miller@example.com', 'Jack', 'Miller', 'jmiller', 'hashedpassword107', 'West401');
+(7890123456, 107, 'jack.miller@esurendra.edu', 'Jack', 'Miller', 'jmiller', 'hashedpassword107', 'West401');
 
 INSERT INTO HOUSING_APPLICATION (ApplicationID, Status, SubmissionDate, StudentID, StaffID) VALUES
 (201, 1, '2023-01-01', 101, 1),
