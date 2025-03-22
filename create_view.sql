@@ -1,39 +1,14 @@
-CREATE VIEW StudentAccountsView AS
+CREATE VIEW HousingApplicationPortal AS
 SELECT 
-    StudentID AS student_id,
-    FirstName AS first_name,
-    LastName AS last_name,
-    Phone AS phone_num,
-    EmailAddress AS email,
-    Username AS username,
-    DormRoomName AS room_name
-FROM STUDENT_ACCOUNT;
+    ha.StudentID AS student_id,
+    ha.Status AS status,
+    sa.DormRoomName AS room_name
+FROM 
+    HOUSING_APPLICATION ha
+JOIN 
+    STUDENT_ACCOUNT sa ON ha.StudentID = sa.StudentID;
 
-CREATE VIEW StaffAccountsView AS
-SELECT 
-    StaffID AS staff_id,
-    FirstName AS first_name,
-    LastName AS last_name,
-    EmailAddress AS email,
-    Username AS username
-FROM COLLEGE_STAFF_ACCOUNT;
-
-CREATE VIEW LoginAuthView AS
-SELECT 
-    Username AS username,
-    PasswordHash AS password_hash,
-    'Student' AS account_type,
-    StudentID AS account_id
-FROM STUDENT_ACCOUNT
-UNION ALL
-SELECT 
-    Username,
-    PasswordHash,
-    'Staff',
-    StaffID
-FROM COLLEGE_STAFF_ACCOUNT;
-
-CREATE VIEW HousingApplicationsView AS
+CREATE VIEW StaffApplicationsView AS
 SELECT 
     HA.ApplicationID AS application_id,
     DATE_FORMAT(HA.SubmissionDate, '%m/%d/%Y') AS submission_date,
