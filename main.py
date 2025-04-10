@@ -1,73 +1,92 @@
-import os
-from flask import Flask, render_template, request, redirect, url_for, flash
-import mysql.connector
+from flask import Flask, render_template, request, redirect, url_for, flash, session
+import pymysql
 from dotenv import load_dotenv
+import os
+import bcrypt
 
-
-# Load environment variables from .env file
 load_dotenv()
 
-# Initialize the flask app
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET")
 
-
-# ------------------------ BEGIN FUNCTIONS ------------------------ #
-# Function to retrieve DB connection
 def get_db_connection():
-    conn = mysql.connector.connect(
+    return pymysql.connect(
         host=os.getenv("DB_HOST"),
         user=os.getenv("DB_USER"),
         password=os.getenv("DB_PASSWORD"),
-        database=os.getenv("DB_DATABASE")
+        database=os.getenv("DB_DATABASE"),
+        cursorclass=pymysql.cursors.DictCursor
     )
-    return conn
 
-# Get all items from the "items" table of the db
-def get_all_items():
-    # Create a new database connection for each request
-    conn = get_db_connection()  # Create a new database connection
-    cursor = conn.cursor() # Creates a cursor for the connection, you need this to do queries
-    # Query the db
-    query = "SELECT name, quantity FROM items"
-    cursor.execute(query)
-    # Get result and close
-    result = cursor.fetchall() # Gets result from query
-    conn.close() # Close the db connection (NOTE: You should do this after each query, otherwise your database may become locked)
-    return result
-# ------------------------ END FUNCTIONS ------------------------ #
-
-
-# ------------------------ BEGIN ROUTES ------------------------ #
-# EXAMPLE OF GET REQUEST
-@app.route("/", methods=["GET"])
+@app.route('/')
 def home():
-    items = get_all_items() # Call defined function to get all items
-    return render_template("index.html", items=items) # Return the page to be rendered
+    return redirect(url_for('login'))
 
-# EXAMPLE OF POST REQUEST
-@app.route("/new-item", methods=["POST"])
-def add_item():
-    try:
-        # Get items from the form
-        data = request.form
-        item_name = data["name"] # This is defined in the input element of the HTML form on index.html
-        item_quantity = data["quantity"] # This is defined in the input element of the HTML form on index.html
-
-        # TODO: Insert this data into the database
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    if request.method == 'POST':
+        username = request.form['username']
+        password = request.form['password']
+        user_type = request.form['user_type']
         
-        # Send message to page. There is code in index.html that checks for these messages
-        flash("Item added successfully", "success")
-        # Redirect to home. This works because the home route is named home in this file
-        return redirect(url_for("home"))
+        conn = get_db_connection()
+        cursor = conn.cursor()
+        
+        if user_type == 'student':
+            cursor.execute("SELECT * FROM STUDENT_ACCOUNT WHERE Username = %s", (username,))
+        elif user_type == 'staff':
+            cursor.execute("SELECT * FROM COLLEGE_STAFF_ACCOUNT WHERE Username = %s", (username,))
+        
+        user = cursor.fetchone()
+        conn.close()
+        
+        if user and bcrypt.checkpw(password.encode('utf-8'), user['PasswordHash'].encode('utf-8')):
+            session['user_id'] = user['StudentID'] if user_type == 'student' else user['StaffID']
+            session['username'] = username
+            session['user_type'] = user_type
+            flash('Login successful!', 'success')
+            # Redirect to a student or staff dashboard based on user type
+            return redirect(url_for('application_portal'))
+        else:
+            flash('Invalid username or password', 'danger')
+    
+    return render_template('login.html')
 
-    # If an error occurs, this code block will be called
-    except Exception as e:
-        flash(f"An error occurred: {str(e)}", "error") # Send the error message to the web page
-        return redirect(url_for("home")) # Redirect to home
-# ------------------------ END ROUTES ------------------------ #
+@app.route('/create_account', methods=['GET', 'POST'])
+def create_account():
+    if request.method == 'POST':
+        phone = request.form['phone']
+        # user_type = request.form['user_type']
+        first_name = request.form['first_name']
+        last_name = request.form['last_name']
+        email = request.form['email']
+        username = request.form['username']
+        password = request.form['password']
+        password_hash = bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt())
 
+        conn = get_db_connection()
+        cursor = conn.cursor()
 
-# listen on port 8080
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8080, debug=True) # TODO: Students PLEASE remove debug=True when you deploy this for production!!!!!
+        cursor.execute(
+            "INSERT INTO STUDENT_ACCOUNT (Phone, FirstName, LastName, EmailAddress, Username, PasswordHash) VALUES (%s, %s, %s, %s, %s, %s)",
+            (phone, first_name, last_name, email, username, password_hash.decode('utf-8'))
+        )
+
+        conn.commit()
+        conn.close()
+        flash('Account created successfully!', 'success')
+        return redirect(url_for('login'))
+
+    return render_template('create_account.html')
+
+@app.route('/application', methods=['GET', 'POST'])
+def application_portal():
+    if 'username' not in session:
+        flash('You need to log in first.', 'warning')
+        return redirect(url_for('login'))
+    
+    if request.method == 'GET':
+        return render_template('application.html')
+
+if __name__ == '__main__':
+    app.run(host="0.0.0.0", port=8080, debug=True) 
