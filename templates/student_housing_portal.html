@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Housing Application Portal</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+    <div class="container">
+        <div class="header">Housing Application Portal</div>
+        <div class="content">
+            {% if application_info %}
+                <p><strong>Application Status:</strong> {{ application_info['status'] }}</p>
+                <p><strong>Assigned Dorm Room:</strong> {{ application_info['room_name'] }}</p>
+                <form action="{{ url_for('withdraw_application') }}" method="post">
+                    <button type="submit">Withdraw Application</button>
+                </form>
+            {% else %}
+                <p>No application found.</p>
+                <form action="{{ url_for('submit_application') }}" method="post">
+                    <button type="submit">Submit Application</button>
+                </form>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

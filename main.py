@@ -3,6 +3,8 @@ import pymysql
 from dotenv import load_dotenv
 import os
 import bcrypt
+from datetime import date
+import random
 
 load_dotenv()
 
@@ -79,14 +81,72 @@ def create_account():
 
     return render_template('create_account.html')
 
-@app.route('/application', methods=['GET', 'POST'])
-def application_portal():
-    if 'username' not in session:
-        flash('You need to log in first.', 'warning')
+@app.route('/student_housing_portal')
+def student_housing_portal():
+    if 'username' not in session or session['user_type'] != 'student':
+        flash('You need to log in as a student first.', 'warning')
         return redirect(url_for('login'))
     
-    if request.method == 'GET':
-        return render_template('application.html')
+    student_id = session['user_id']
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT status, room_name FROM HousingApplicationPortal WHERE student_id = %s", (student_id,))
+    application_info = cursor.fetchone()
+    conn.close()
+    
+    return render_template('student_housing_portal.html', application_info=application_info)
+
+@app.route('/submit_application', methods=['POST'])
+def submit_application():
+    if 'username' not in session or session['user_type'] != 'student':
+        flash('You need to log in as a student first.', 'warning')
+        return redirect(url_for('login'))
+    
+    student_id = session['user_id']
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+
+    # Check for existing application
+    cursor.execute("SELECT * FROM HOUSING_APPLICATION WHERE StudentID = %s", (student_id,))
+    if cursor.fetchone():
+        flash('Application already submitted.', 'warning')
+    else:
+        # Get a random staff ID
+        cursor.execute("SELECT StaffID FROM COLLEGE_STAFF_ACCOUNT ORDER BY RAND() LIMIT 1")
+        staff_id = cursor.fetchone()['StaffID']
+        
+        # Insert a new application
+        cursor.execute(
+            "INSERT INTO HOUSING_APPLICATION (Status, SubmissionDate, StudentID, StaffID) VALUES (%s, %s, %s, %s)",
+            ('Submitted', date.today(), student_id, staff_id)
+        )
+        conn.commit()
+        flash('Application submitted successfully!', 'success')
+    
+    conn.close()
+    return redirect(url_for('student_housing_portal'))
+
+@app.route('/withdraw_application', methods=['POST'])
+def withdraw_application():
+    if 'username' not in session or session['user_type'] != 'student':
+        flash('You need to log in as a student first.', 'warning')
+        return redirect(url_for('login'))
+    
+    student_id = session['user_id']
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    # Delete the application
+    cursor.execute("DELETE FROM HOUSING_APPLICATION WHERE StudentID = %s", (student_id,))
+    conn.commit()
+    conn.close()
+    
+    flash('Application withdrawn successfully!', 'success')
+    return redirect(url_for('student_housing_portal'))
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=8080, debug=True) 
