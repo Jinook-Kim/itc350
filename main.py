@@ -198,8 +198,8 @@ def approve_application(application_id):
         conn.close()
         return redirect(url_for('staff_application_portal'))
 
-    # Find an available dorm room
-    cursor.execute("SELECT DormRoomName FROM DORM_ROOM WHERE AvailableSpots > 0 ORDER BY RAND() LIMIT 1")
+    # Find an available dorm room with space for more occupants
+    cursor.execute("SELECT DormRoomName FROM DORM_ROOM WHERE AvailableSpots > 0 AND NumberOfRoomOccupants < 4 ORDER BY RAND() LIMIT 1")
     dorm_room = cursor.fetchone()
     
     if dorm_room:
@@ -270,6 +270,21 @@ def reject_application(application_id):
 
     conn.close()
     return redirect(url_for('staff_application_portal'))
+
+@app.route('/housing_availability')
+def housing_availability():
+    if 'username' not in session:
+        flash('You need to log in first.', 'warning')
+        return redirect(url_for('login'))
+    
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    
+    cursor.execute("SELECT * FROM DormRoomAvailabilityView")
+    dorm_rooms = cursor.fetchall()
+    conn.close()
+    
+    return render_template('housing_availability.html', dorm_rooms=dorm_rooms)
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=8080, debug=True) 
