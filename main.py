@@ -142,8 +142,25 @@ def withdraw_application():
     conn = get_db_connection()
     cursor = conn.cursor()
     
+    # Fetch the assigned dorm room if any
+    cursor.execute("SELECT DormRoomName FROM STUDENT_ACCOUNT WHERE StudentID = %s", (student_id,))
+    result = cursor.fetchone()
+    
+    if result and result['DormRoomName']:
+        dorm_room_name = result['DormRoomName']
+        
+        # Update the dorm room to increase available spots and decrease room occupants
+        cursor.execute(
+            "UPDATE DORM_ROOM SET AvailableSpots = AvailableSpots + 1, NumberOfRoomOccupants = NumberOfRoomOccupants - 1 WHERE DormRoomName = %s",
+            (dorm_room_name,)
+        )
+        
+        # Clear the assigned dorm room for the student
+        cursor.execute("UPDATE STUDENT_ACCOUNT SET DormRoomName = NULL WHERE StudentID = %s", (student_id,))
+    
     # Delete the application
     cursor.execute("DELETE FROM HOUSING_APPLICATION WHERE StudentID = %s", (student_id,))
+    
     conn.commit()
     conn.close()
     
@@ -199,6 +216,9 @@ def approve_application(application_id):
         cursor.execute(
             "UPDATE DORM_ROOM SET AvailableSpots = AvailableSpots - 1 WHERE DormRoomName = %s", (dorm_room_name,)
         )
+        cursor.execute(
+            "UPDATE DORM_ROOM SET NumberOfRoomOccupants = NumberOfRoomOccupants + 1 WHERE DormRoomName = %s", (dorm_room_name,)
+        )
         conn.commit()
         flash('Application approved and dorm room assigned!', 'success')
     else:
@@ -231,6 +251,9 @@ def reject_application(application_id):
         if dorm_room_name:
             cursor.execute(
                 "UPDATE DORM_ROOM SET AvailableSpots = AvailableSpots + 1 WHERE DormRoomName = %s", (dorm_room_name,)
+            )
+            cursor.execute(
+                "UPDATE DORM_ROOM SET NumberOfRoomOccupants = NumberOfRoomOccupants - 1 WHERE DormRoomName = %s", (dorm_room_name,)
             )
             cursor.execute(
                 "UPDATE STUDENT_ACCOUNT SET DormRoomName = NULL WHERE StudentID = %s", (student_id,)
