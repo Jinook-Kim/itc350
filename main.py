@@ -259,7 +259,7 @@ def reject_application(application_id):
                 "UPDATE STUDENT_ACCOUNT SET DormRoomName = NULL WHERE StudentID = %s", (student_id,)
             )
         
-        # Update the application status
+        # Update the application status (#commit)
         cursor.execute(
             "UPDATE HOUSING_APPLICATION SET Status = 'Rejected' WHERE ApplicationID = %s", (application_id,)
         )
