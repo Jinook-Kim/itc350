@@ -1,3 +1,4 @@
+# You need to install bcrypt first for this to work
 import bcrypt
 
 password = "1234"
