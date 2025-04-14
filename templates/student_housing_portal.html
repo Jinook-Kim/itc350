@@ -8,6 +8,11 @@
 <body>
     <div class="container">
         <div class="header">Housing Application Portal</div>
+        <div class="logout">
+            <form action="{{ url_for('logout') }}" method="get">
+                <button type="submit" class="logout-button">Logout</button>
+            </form>
+            </div>
         <div class="content">
             {% if application_info %}
                 <p><strong>Application Status:</strong> {{ application_info['status'] }}</p>

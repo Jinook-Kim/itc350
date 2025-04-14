@@ -259,7 +259,7 @@ def reject_application(application_id):
                 "UPDATE STUDENT_ACCOUNT SET DormRoomName = NULL WHERE StudentID = %s", (student_id,)
             )
         
-        # Update the application status
+        # Update the application status.
         cursor.execute(
             "UPDATE HOUSING_APPLICATION SET Status = 'Rejected' WHERE ApplicationID = %s", (application_id,)
         )
@@ -285,6 +285,12 @@ def housing_availability():
     conn.close()
     
     return render_template('housing_availability.html', dorm_rooms=dorm_rooms)
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    flash('You have been logged out.', 'info')
+    return redirect(url_for('login'))
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=8080, debug=True) 
